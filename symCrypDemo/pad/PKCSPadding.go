@@ -4,15 +4,15 @@ import "bytes"
 
 //PKCS5Padding 要求分组长度只能为8
 func PKCS5Padding(cipherTxt []byte) []byte {
-	return PKCSPadding(cipherTxt, 8)
+	return pkcsPadding(cipherTxt, 8)
 }
 //PKCS7Padding 要求分组的长度可以[1-255]
 func PKCS7Padding(cipherTxt []byte, blockSize int) []byte {
-	return PKCSPadding(cipherTxt, blockSize)
+	return pkcsPadding(cipherTxt, blockSize)
 }
 
 //补码
-func PKCSPadding(cipherTxt []byte, blockSize int) []byte {
+func pkcsPadding(cipherTxt []byte, blockSize int) []byte {
 	//计算要添加的数字
 	padNumber := blockSize - len(cipherTxt)%blockSize
 	//重复padNumber个padNUmber

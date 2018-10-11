@@ -12,8 +12,7 @@ import (
 //DES加密
 func DESEncrypt(origData []byte, key []byte) []byte {
 	//DES加密中key长度必须为8
-
-	block, err := des.NewCipher(key)
+	block, err := des.NewCipher(key)//生成加密用的block
 	if err != nil {
 		log.Panic(err)
 	}
@@ -23,8 +22,12 @@ func DESEncrypt(origData []byte, key []byte) []byte {
 	crypted := make([]byte, block.BlockSize() + len(origData))
 	//向iv切片数组初始化rand.Reader（随机内存流）
 	iv := crypted[:block.BlockSize()]
-	io.ReadFull(rand.Reader, iv)
-	//设置加密模式CBC （还有ECB,CBC,CFB,OFB,CTR)
+	_, err = io.ReadFull(rand.Reader, iv)
+	if err != nil {
+		panic(err)
+	}
+
+	//设置加密模式CBC （还有ECB,CBC,CFB,OFB,CTR) 部分模式(ECB和CBC)需要最后一块在加密前进行填充
 	blockMode := cipher.NewCBCEncrypter(block, iv)
 
 	blockMode.CryptBlocks(crypted[block.BlockSize():], origData)
