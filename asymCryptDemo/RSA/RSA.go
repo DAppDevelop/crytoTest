@@ -5,6 +5,10 @@ import (
 	"crypto/x509"
 	"crypto/rsa"
 	"crypto/rand"
+	"crypto/md5"
+	"fmt"
+	"encoding/hex"
+	"crypto"
 )
 
 //生明私钥
@@ -34,6 +38,9 @@ ns93W3LLsmfhMV1uVsclPMgzIqkDni9OVIAAWqn0ZOkjOTtyUzzhiqp24kb0Wqi7
 KDhnFtZ+YTlsbAlM3wIDAQAB
 -----END PUBLIC KEY-----`)
 
+var privKey2 *rsa.PrivateKey
+var pubKey2 rsa.PublicKey
+
 func RSAEncrypt(origData []byte) []byte {
 	//公钥加密
 	block, _ := pem.Decode(pubKey)
@@ -55,4 +62,54 @@ func RSADecrypt(origData []byte) []byte {
 	bts, _ := rsa.DecryptPKCS1v15(rand.Reader, priv, origData)
 
 	return bts
+}
+
+func RSAEncrypt2(origData []byte) []byte {
+	//生成公私钥
+	privKey2, _ = rsa.GenerateKey(rand.Reader, 1024)
+	pubKey2 = privKey2.PublicKey
+
+	cipherTxt, _ := rsa.EncryptOAEP(md5.New(), rand.Reader, &pubKey2, origData, nil)
+	fmt.Println(hex.EncodeToString(cipherTxt))
+	return cipherTxt
+}
+
+func RSADecrypt2(cipherTxt []byte) []byte {
+	origData, _ := rsa.DecryptOAEP(md5.New(), rand.Reader, privKey2, cipherTxt, nil)
+	fmt.Println(string(origData))
+	return origData
+}
+
+//rsa 生成签名
+func RSASign(origData []byte) []byte {
+	//生成公私钥
+	privKey2, _ = rsa.GenerateKey(rand.Reader, 1024)
+	pubKey2 = privKey2.PublicKey
+
+	//将要签名的数据散列
+	h := md5.New()
+	h.Write(origData)
+	hashed := h.Sum(nil)
+
+	//通过pss函数，实现对明文hello world的签名
+	//pss函数可以添加杂质，能够使得签名过程更安全
+	opts := rsa.PSSOptions{rsa.PSSSaltLengthAuto, crypto.MD5}
+	//实现签名
+	sign, _ := rsa.SignPSS(rand.Reader, privKey2, crypto.MD5, hashed, &opts)
+	sign = append(sign, hashed...)
+	fmt.Println(hex.EncodeToString(sign))
+	return sign
+}
+
+//rsa 验证签名
+func RSAVerifySign(sign []byte) bool  {
+	hashed := sign[len(sign)-md5.Size:]
+	sign = sign[:len(sign)-md5.Size]
+	opts := rsa.PSSOptions{rsa.PSSSaltLengthAuto, crypto.MD5}
+	err := rsa.VerifyPSS(&pubKey2, crypto.MD5, hashed, sign, &opts)
+	if err != nil {
+		return false
+	}
+	fmt.Println("验签成功！！")
+	return true
 }
